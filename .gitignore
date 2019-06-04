@@ -1,0 +1,27 @@
+### Gradle template
+.gradle
+/build/
+
+### Maven template
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/
+
+### JetBrains template
+# IntelliJ
+.idea/
+out/
+
+# mpeltonen/sbt-idea plugin
+.idea_modules/
+
+### custom
+src/resources/.*
+assembly/
+.DS_Store

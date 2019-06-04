@@ -43,7 +43,7 @@
             <!--<descriptor>resources/assembly.xml</descriptor>-->
             <archive>
               <manifest>
-                <mainClass>com.qiniu.examples.QSuitsDemo3</mainClass>
+                <mainClass>com.qiniu.App</mainClass>
               </manifest>
             </archive>
             <descriptorRefs>

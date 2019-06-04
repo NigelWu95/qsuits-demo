@@ -25,7 +25,7 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
     public AliOssPrivateUrl(String accessKey, String secretKey, Configuration configuration, String bucket, String domain)
             throws IOException {
         super("aliprivate", accessKey, secretKey, configuration, bucket);
-        region = OssUtils.getAliOssRegion(accessKey, secretKey, bucket);
+        region = "http://" + OssUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
         ossClient = new OSSClient(region, accessKey, secretKey);
         this.domain = domain;
     }
@@ -33,7 +33,7 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
     public AliOssPrivateUrl(String accessKey, String secretKey, Configuration configuration, String bucket, String domain,
                             String savePath, int saveIndex) throws IOException {
         super("aliprivate", accessKey, secretKey, configuration, bucket, savePath, saveIndex);
-        region = OssUtils.getAliOssRegion(accessKey, secretKey, bucket);
+        region = "http://" + OssUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
         ossClient = new OSSClient(OssUtils.getAliOssRegion(accessKey, secretKey, bucket), accessKey, secretKey);
         this.domain = domain;
     }
@@ -41,7 +41,7 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
     public AliOssPrivateUrl(String accessKey, String secretKey, Configuration configuration, String bucket, String domain,
                             String savePath) throws IOException {
         super("aliprivate", accessKey, secretKey, configuration, bucket, savePath, 0);
-        region = OssUtils.getAliOssRegion(accessKey, secretKey, bucket);
+        region = "http://" + OssUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
         ossClient = new OSSClient(OssUtils.getAliOssRegion(accessKey, secretKey, bucket), accessKey, secretKey);
         this.domain = domain;
     }
@@ -70,10 +70,10 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
     @Override
     public String singleResult(Map<String, String> line) throws IOException {
         // 生成以GET方法访问的签名URL，访客可以直接通过浏览器访问相关内容。
-        URL url = ossClient.generatePresignedUrl(bucket, "http://" + domain + "/" + line.get("key"), expiration);
+        URL url = ossClient.generatePresignedUrl(bucket, line.get("key"), expiration);
         if (nextProcessor != null) {
             Map<String, String> map = new HashMap<String, String>(){{
-                put("key", url.toString());
+                put("url", url.toString());
             }};
             return nextProcessor.processLine(map);
         } else {

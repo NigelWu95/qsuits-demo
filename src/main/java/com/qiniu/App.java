@@ -18,13 +18,15 @@ public class App {
         Properties properties = new PropertiesFile("src/resources/.config.properties").getProperties();
         IEntryParam entryParam = new ParamsConfig(properties);
         QSuitsEntry qSuitsEntry = new QSuitsEntry(entryParam);
-        ILineProcess<Map<String, String>> processor = qSuitsEntry.getProcessor();
+        IDataSource dataSource = qSuitsEntry.getDataSource();
+        entryParam.addParam("url-index", "url");
+        qSuitsEntry.UpdateEntry(entryParam);
         CommonParams commonParams = qSuitsEntry.getCommonParams();
         AliOssPrivateUrl aliOssPrivateUrl = new AliOssPrivateUrl(commonParams.getAliyunAccessId(),
                 commonParams.getAliyunAccessSecret(), null, commonParams.getBucket(),
                 entryParam.getValue("domain"), commonParams.getSavePath());
+        ILineProcess<Map<String, String>> processor = qSuitsEntry.getProcessor();
         aliOssPrivateUrl.setNextProcessor(processor);
-        IDataSource dataSource = qSuitsEntry.getDataSource();
         if (dataSource != null) {
             dataSource.setProcessor(aliOssPrivateUrl);
             dataSource.export();

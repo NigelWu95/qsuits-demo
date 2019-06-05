@@ -15,12 +15,14 @@ public class App {
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws Exception {
-        Properties properties = new PropertiesFile("src/resources/.config.properties").getProperties();
-        IEntryParam entryParam = new ParamsConfig(properties);
-        QSuitsEntry qSuitsEntry = new QSuitsEntry(entryParam);
+//        Properties properties = new PropertiesFile("src/resources/.config.properties").getProperties();
+//        IEntryParam entryParam = new ParamsConfig(properties);
+//        QSuitsEntry qSuitsEntry = new QSuitsEntry(entryParam);
+        QSuitsEntry qSuitsEntry = new QSuitsEntry(args);
         IDataSource dataSource = qSuitsEntry.getDataSource();
+        IEntryParam entryParam = qSuitsEntry.getEntryParam();
         entryParam.addParam("url-index", "url");
-        qSuitsEntry.UpdateEntry(entryParam);
+        qSuitsEntry.updateEntry(entryParam);
         CommonParams commonParams = qSuitsEntry.getCommonParams();
         AliOssPrivateUrl aliOssPrivateUrl = new AliOssPrivateUrl(commonParams.getAliyunAccessId(),
                 commonParams.getAliyunAccessSecret(), null, commonParams.getBucket(),

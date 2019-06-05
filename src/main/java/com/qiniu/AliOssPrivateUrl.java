@@ -69,11 +69,13 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
 
     @Override
     public String singleResult(Map<String, String> line) throws IOException {
+        String key = line.get("key");
         // 生成以GET方法访问的签名URL，访客可以直接通过浏览器访问相关内容。
-        URL url = ossClient.generatePresignedUrl(bucket, line.get("key"), expiration);
+        URL url = ossClient.generatePresignedUrl(bucket, key, expiration);
         if (nextProcessor != null) {
             Map<String, String> map = new HashMap<String, String>(){{
                 put("url", url.toString());
+                put("key", key);
             }};
             return nextProcessor.processLine(map);
         } else {

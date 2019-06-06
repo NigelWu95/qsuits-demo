@@ -25,7 +25,7 @@ public class App {
         qSuitsEntry.updateEntry(entryParam);
         CommonParams commonParams = qSuitsEntry.getCommonParams();
         AliOssPrivateUrl aliOssPrivateUrl = new AliOssPrivateUrl(commonParams.getAliyunAccessId(),
-                commonParams.getAliyunAccessSecret(), null, commonParams.getBucket(),
+                commonParams.getAliyunAccessSecret(), commonParams.getBucket(),
                 entryParam.getValue("domain"), commonParams.getSavePath());
         ILineProcess<Map<String, String>> processor = qSuitsEntry.getProcessor();
         aliOssPrivateUrl.setNextProcessor(processor);

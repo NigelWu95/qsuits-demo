@@ -25,3 +25,6 @@ out/
 src/resources/.*
 assembly/
 .DS_Store
+qsuits.error
+qsuits.info
+procedure*.log

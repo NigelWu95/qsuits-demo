@@ -3,7 +3,7 @@ package com.qiniu;
 import com.aliyun.oss.OSSClient;
 import com.qiniu.interfaces.ILineProcess;
 import com.qiniu.process.Base;
-import com.qiniu.util.OssUtils;
+import com.qiniu.util.CloudApiUtils;
 
 import java.io.IOException;
 import java.net.URL;
@@ -23,7 +23,7 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
     public AliOssPrivateUrl(String accessKey, String secretKey, String bucket, String domain)
             throws IOException {
         super("aliprivate", accessKey, secretKey, bucket);
-        region = "http://" + OssUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
+        region = "http://" + CloudApiUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
         ossClient = new OSSClient(region, accessKey, secretKey);
         this.domain = domain;
     }
@@ -31,33 +31,28 @@ public class AliOssPrivateUrl extends Base<Map<String, String>> {
     public AliOssPrivateUrl(String accessKey, String secretKey, String bucket, String domain,
                             String savePath, int saveIndex) throws IOException {
         super("aliprivate", accessKey, secretKey, bucket, savePath, saveIndex);
-        region = "http://" + OssUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
-        ossClient = new OSSClient(OssUtils.getAliOssRegion(accessKey, secretKey, bucket), accessKey, secretKey);
+        region = "http://" + CloudApiUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
+        ossClient = new OSSClient(CloudApiUtils.getAliOssRegion(accessKey, secretKey, bucket), accessKey, secretKey);
         this.domain = domain;
     }
 
     public AliOssPrivateUrl(String accessKey, String secretKey, String bucket, String domain,
                             String savePath) throws IOException {
         super("aliprivate", accessKey, secretKey, bucket, savePath, 0);
-        region = "http://" + OssUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
-        ossClient = new OSSClient(OssUtils.getAliOssRegion(accessKey, secretKey, bucket), accessKey, secretKey);
+        region = "http://" + CloudApiUtils.getAliOssRegion(accessKey, secretKey, bucket) + ".aliyuncs.com";
+        ossClient = new OSSClient(CloudApiUtils.getAliOssRegion(accessKey, secretKey, bucket), accessKey, secretKey);
         this.domain = domain;
     }
 
     public AliOssPrivateUrl clone() throws CloneNotSupportedException {
         AliOssPrivateUrl aliOssPrivateUrl = (AliOssPrivateUrl)super.clone();
-        aliOssPrivateUrl.ossClient = new OSSClient(region, authKey1, authKey2);
+        aliOssPrivateUrl.ossClient = new OSSClient(region, accessId, secretKey);
         return aliOssPrivateUrl;
     }
 
     @Override
     public String resultInfo(Map<String, String> line) {
         return line.get("key");
-    }
-
-    @Override
-    public boolean validCheck(Map<String, String> line) {
-        return true;
     }
 
     @Override

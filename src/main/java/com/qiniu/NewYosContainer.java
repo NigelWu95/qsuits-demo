@@ -395,115 +395,6 @@ public class NewYosContainer implements IDataSource<ILister<FileItem>, IResultOu
         }
     }
 
-    private List<String> moreValidPrefixes(ILister<FileItem> lister, boolean doFutureCheck) {
-        boolean next;
-        try {
-            next = doFutureCheck ? lister.hasFutureNext() : lister.hasNext();
-        } catch (SuitsException e) {
-            next = lister.hasNext();
-        }
-        String startPrefix = lister.getPrefix();
-        String point = null;
-        if (next) {
-            // 如果存在 next 且当前获取的最后一个对象文件名不为空，则可以根据最后一个对象的文件名计算后续的前缀字符
-            String endKey = lister.currentEndKey();
-            int prefixLen = startPrefix.length();
-            if (endKey != null) {
-                if (endKey.length() > prefixLen) {
-                    // 如果最后一个对象的文件名长度大于 prefixLen，则可以取出从当前前缀开始的下一个字符 point，用于和预定义前缀列表进行比较，
-                    // 确定 lister 的 endPrefix
-                    point = endKey.substring(prefixLen, prefixLen + 1);
-                    // 如果此时下一个字符比预定义的最后一个前缀大的话（如中文文件名的情况）说明后续根据预定义前缀再检索无意义，则直接返回即可
-                    if (point.compareTo(lastPoint) > 0) {
-                        point = null;
-                        // 如果 point 比第一个预定义前缀小则设置 lister 的结束位置到第一个预定义前缀
-                    } else if (point.compareTo(firstPoint) < 0) {
-                        point = firstPoint;
-                        lister.setEndPrefix(startPrefix + firstPoint);
-                    } else {
-                        insertIntoPrefixesMap(startPrefix + point, new HashMap<String, String>(){{
-                            put("marker", lister.getMarker());
-                        }});
-                        lister.setEndPrefix(endKey);
-                    }
-                } else {
-                    point = firstPoint;
-                    // 无 next 时直接将 lister 的结束位置设置到第一个预定义前
-                    lister.setEndPrefix(startPrefix + firstPoint);
-                }
-            } else {
-                return moreValidPrefixes(lister, true);
-            }
-        }
-        if (point != null) {
-            String finalPoint = point;
-            return originPrefixList.stream().filter(prefix -> prefix.compareTo(finalPoint) >= 0)
-                    .map(prefix -> lister.getPrefix() + prefix).filter(this::checkPrefix)
-                    .peek(this::recordListerByPrefix).collect(Collectors.toList());
-        } else {
-            return null;
-        }
-    }
-
-    private List<ILister<FileItem>> filteredListerByPrefixes(Stream<String> prefixesStream) {
-        List<ILister<FileItem>> prefixesLister = prefixesStream.map(prefix -> {
-            try {
-                return generateLister(prefix);
-            } catch (SuitsException e) {
-                try { FileUtils.createIfNotExists(errorLogFile); } catch (IOException ignored) {}
-                errorLogger.error("generate lister failed by {}\t{}", prefix, prefixesMap.get(prefix), e);
-                return null;
-            }
-        }).filter(generated -> {
-            if (generated == null) return false;
-            else if (generated.currents().size() > 0 || generated.hasNext()) return true;
-            else {
-                recorder.remove(generated.getPrefix());
-                generated.close();
-                return false;
-            }
-        }).collect(Collectors.toList());
-        if (prefixesLister.size() > 0) {
-            ILister<FileItem> lastLister = prefixesLister.stream().max(Comparator.comparing(ILister::getPrefix)).get();
-            Map<String, String> map = prefixesMap.get(lastLister.getPrefix());
-            if (map == null) {
-                prefixAndEndedMap.put(lastLister.getPrefix(), new HashMap<>());
-            } else if (!map.containsKey("remove")) {
-                prefixAndEndedMap.put(lastLister.getPrefix(), map);
-            }
-        }
-        Iterator<ILister<FileItem>> it = prefixesLister.iterator();
-        while (it.hasNext()) {
-            ILister<FileItem> nLister = it.next();
-            if(!nLister.hasNext() || (nLister.getEndPrefix() != null && !"".equals(nLister.getEndPrefix()))) {
-                executorPool.execute(() -> listing(nLister));
-                it.remove();
-            }
-        }
-        return prefixesLister;
-    }
-
-    private void processNodeLister(ILister<FileItem> lister) {
-        if (lister.currents().size() > 0 || lister.hasNext()) {
-            executorPool.execute(() -> listing(lister));
-        } else {
-            recorder.remove(lister.getPrefix());
-            lister.close();
-        }
-    }
-
-    private List<ILister<FileItem>> computeToNextLevel(List<ILister<FileItem>> listerList) {
-        return listerList.parallelStream().map(lister -> {
-            List<String> nextPrefixes = moreValidPrefixes(lister, true);
-            processNodeLister(lister);
-            if (nextPrefixes != null) {
-                return filteredListerByPrefixes(nextPrefixes.stream());
-            } else {
-                return null;
-            }
-        }).filter(Objects::nonNull).reduce((list1, list2) -> { list1.addAll(list2); return list1; }).orElse(null);
-    }
-
     private void endAction() throws IOException {
         ILineProcess<Map<String, String>> processor;
         for (Map.Entry<String, IResultOutput<BufferedWriter>> saverEntry : saverMap.entrySet()) {
@@ -540,9 +431,8 @@ public class NewYosContainer implements IDataSource<ILister<FileItem>, IResultOu
         Signal.handle(new Signal("INT"), handler);
     }
 
-    private List<Future<List<String>>> futures = new ArrayList<>();
-
     private List<String> listAndGetNextPrefixes(List<String> prefixes) throws Exception {
+        List<Future<List<String>>> futures = new ArrayList<>();
         List<String> nextPrefixes = new ArrayList<>();
         List<String> tempPrefixes;
         for (String prefix : prefixes) {
@@ -577,20 +467,17 @@ public class NewYosContainer implements IDataSource<ILister<FileItem>, IResultOu
                 futures.add(future);
             }
         }
-        return nextPrefixes;
-    }
-
-    private List<String> checkFuture() throws Exception {
-        Iterator<Future<List<String>>> iterator = futures.iterator();
-        List<String> nextPrefixes = new ArrayList<>();
-        List<String> tempPrefixes;
+        Iterator<Future<List<String>>> iterator;
         Future<List<String>> future;
-        while (iterator.hasNext()) {
-            future = iterator.next();
-            if (future.isDone()) {
-                tempPrefixes = future.get();
-                if (tempPrefixes != null) nextPrefixes.addAll(tempPrefixes);
-                iterator.remove();
+        while (futures.size() > 0) {
+            iterator = futures.iterator();
+            while (iterator.hasNext()) {
+                future = iterator.next();
+                if (future.isDone()) {
+                    tempPrefixes = future.get();
+                    if (tempPrefixes != null) nextPrefixes.addAll(tempPrefixes);
+                    iterator.remove();
+                }
             }
         }
         return nextPrefixes;
@@ -628,17 +515,8 @@ public class NewYosContainer implements IDataSource<ILister<FileItem>, IResultOu
         showdownHook();
         try {
             prefixes = listAndGetNextPrefixes(prefixes);
-            prefixes.addAll(checkFuture());
             while (prefixes != null && prefixes.size() > 0) {
                 prefixes = listAndGetNextPrefixes(prefixes);
-                prefixes.addAll(checkFuture());
-            }
-            List<String> tempPrefixes;
-            for (Future<List<String>> future : futures) {
-                if (future.isDone()) {
-                    tempPrefixes = future.get();
-//                    if (tempPrefixes != null) nextPrefixes.addAll(tempPrefixes);
-                }
             }
             executorPool.shutdown();
             while (!executorPool.isTerminated()) {

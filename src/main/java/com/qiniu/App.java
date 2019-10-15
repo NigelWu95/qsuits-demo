@@ -17,10 +17,10 @@ public class App {
 
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws Exception {
-        IEntryParam entryParam = new ParamsConfig(new PropertiesFile("src/resources/.config.properties").getProperties());
-        QSuitsEntry qSuitsEntry = new QSuitsEntry(entryParam);
-//        IEntryParam entryParam = new ParamsConfig(args, null);
+//        IEntryParam entryParam = new ParamsConfig(new PropertiesFile("src/resources/.config.properties").getProperties());
 //        QSuitsEntry qSuitsEntry = new QSuitsEntry(entryParam);
+        IEntryParam entryParam = new ParamsConfig(args, null);
+        QSuitsEntry qSuitsEntry = new QSuitsEntry(entryParam);
         CommonParams commonParams = qSuitsEntry.getCommonParams();
         String username = commonParams.getUpyunUsername();
         String password = commonParams.getUpyunPassword();

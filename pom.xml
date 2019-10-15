@@ -53,7 +53,7 @@
             <!--<descriptor>resources/assembly.xml</descriptor>-->
             <archive>
               <manifest>
-                <mainClass>com.qiniu.App</mainClass>
+                <mainClass>com.qiniu.ParamsDemo</mainClass>
               </manifest>
             </archive>
             <descriptorRefs>
